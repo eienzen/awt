@@ -1,0 +1,210 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Atheist World AWT</title>
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.2/dist/ethers.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@walletconnect/web3-provider@1.8.0/dist/umd/index.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 font-sans">
+    <div class="container mx-auto p-4">
+        <h1 class="text-3xl font-bold text-center mb-4">Atheist World AWT</h1>
+        <div id="status" class="text-center mb-4 text-red-500 hidden"></div>
+        <div id="connectWallet" class="text-center mb-4">
+            <button onclick="connectWallet()" class="bg-blue-500 text-white px-4 py-2 rounded">Connect Wallet</button>
+        </div>
+        <div id="dashboard" class="hidden bg-white p-6 rounded shadow">
+            <h2 class="text-xl font-semibold mb-2">Dashboard</h2>
+            <p>Address: <span id="userAddress"></span></p>
+            <p>AWT Balance: <span id="awtBalance"></span></p>
+            <p>Referrals: <span id="referralCount"></span></p>
+            <p>Referral Link: <span id="referralLink"></span></p>
+            <div class="mt-4">
+                <button onclick="claimWelcomeBonus()" class="bg-purple-500 text-white px-4 py-2 rounded">Claim Welcome Bonus (100 AWT)</button>
+            </div>
+            <div class="mt-4">
+                <h3 class="font-semibold">Refer Someone</h3>
+                <input id="referrerAddress" type="text" placeholder="Referrer Address" class="border p-2 w-full mb-2">
+                <input id="referAmount" type="number" placeholder="AWT Amount (min 100)" class="border p-2 w-full mb-2">
+                <button onclick="refer()" class="bg-green-500 text-white px-4 py-2 rounded">Refer & Stake</button>
+            </div>
+            <div class="mt-4">
+                <h3 class="font-semibold">Transfer AWT</h3>
+                <input id="transferTo" type="text" placeholder="Recipient Address" class="border p-2 w-full mb-2">
+                <input id="transferAmount" type="number" placeholder="AWT Amount" class="border p-2 w-full mb-2">
+                <button onclick="transfer()" class="bg-blue-500 text-white px-4 py-2 rounded">Transfer</button>
+            </div>
+            <div class="mt-4">
+                <h3 class="font-semibold">Withdraw AWT</h3>
+                <input id="withdrawAmount" type="number" placeholder="AWT Amount" class="border p-2 w-full mb-2">
+                <button onclick="withdraw()" class="bg-red-500 text-white px-4 py-2 rounded">Withdraw</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const contractAddress = "YOUR_CONTRACT_ADDRESS_HERE"; // Replace after deployment
+        const contractABI = [/* Paste ABI from Remix after compilation */];
+        let provider, signer, contract, userAccount;
+
+        async function connectWallet() {
+            try {
+                if (window.ethereum) {
+                    provider = new ethers.BrowserProvider(window.ethereum);
+                    const accounts = await provider.send("eth_requestAccounts", []);
+                    userAccount = accounts[0];
+                    signer = await provider.getSigner();
+                    contract = new ethers.Contract(contractAddress, contractABI, signer);
+                } else {
+                    const walletConnectProvider = new WalletConnectProvider({
+                        rpc: { 97: "https://data-seed-prebsc-1-s1.binance.org:8545/" },
+                    });
+                    await walletConnectProvider.enable();
+                    provider = new ethers.BrowserProvider(walletConnectProvider);
+                    userAccount = (await provider.listAccounts())[0].address;
+                    signer = await provider.getSigner();
+                    contract = new ethers.Contract(contractAddress, contractABI, signer);
+                }
+                document.getElementById('userAddress').innerText = userAccount;
+                document.getElementById('connectWallet').classList.add('hidden');
+                document.getElementById('dashboard').classList.remove('hidden');
+                updateDashboard();
+                checkStatus();
+            } catch (error) {
+                alert('Error connecting wallet: ' + error.message);
+            }
+        }
+
+        async function updateDashboard() {
+            const balance = await contract.balanceOf(userAccount);
+            document.getElementById('awtBalance').innerText = ethers.formatEther(balance);
+            const referralCount = await contract.referralCount(userAccount);
+            document.getElementById('referralCount').innerText = referralCount;
+            document.getElementById('referralLink').innerText = `${window.location.origin}?ref=${userAccount}`;
+        }
+
+        async function checkStatus() {
+            const isPaused = await contract.paused();
+            const referralsPaused = await contract.referralsPaused();
+            const statusDiv = document.getElementById('status');
+            if (isPaused) {
+                statusDiv.innerText = "Staking is currently paused.";
+                statusDiv.classList.remove('hidden');
+            } else if (referralsPaused) {
+                statusDiv.innerText = "Referrals are currently paused.";
+                statusDiv.classList.remove('hidden');
+            } else {
+                statusDiv.classList.add('hidden');
+            }
+        }
+
+        async function claimWelcomeBonus() {
+            try {
+                const tx = await contract.claimWelcomeBonus({ value: ethers.parseEther("0.0005") });
+                await tx.wait();
+                alert('Welcome Bonus claimed successfully!');
+                updateDashboard();
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+
+        async function refer() {
+            const referrer = document.getElementById('referrerAddress').value;
+            const amount = document.getElementById('referAmount').value;
+            if (referrer && !ethers.isAddress(referrer)) {
+                alert('Invalid referrer address');
+                return;
+            }
+            try {
+                const tx = await contract.refer(
+                    referrer || "0x0000000000000000000000000000000000000000",
+                    ethers.parseEther(amount),
+                    { value: ethers.parseEther("0.0005") }
+                );
+                await tx.wait();
+                alert('Referral successful!');
+                updateDashboard();
+                checkStatus();
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+
+        async function transfer() {
+            const to = document.getElementById('transferTo').value;
+            const amount = document.getElementById('transferAmount').value;
+            if (!ethers.isAddress(to)) {
+                alert('Invalid recipient address');
+                return;
+            }
+            try {
+                const tx = await contract.transfer(to, ethers.parseEther(amount));
+                await tx.wait();
+                alert('Transfer successful!');
+                updateDashboard();
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+
+        async function withdraw() {
+            const amount = document.getElementById('withdrawAmount').value;
+            try {
+                const tx = await contract.withdraw(ethers.parseEther(amount), { value: ethers.parseEther("0.0005") });
+                await tx.wait();
+                alert('Withdrawal successful!');
+                updateDashboard();
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+
+        if (window.ethereum) {
+            window.ethereum.on('accountsChanged', () => window.location.reload());
+            connectWallet();
+        }
+    </script>
+</body>
+</html>
