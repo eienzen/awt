@@ -1,49 +1,11 @@
-<script type="text/javascript">
-        var gk_isXlsx = false;
-        var gk_xlsxFileLookup = {};
-        var gk_fileData = {};
-        function filledCell(cell) {
-          return cell !== '' && cell != null;
-        }
-        function loadFileData(filename) {
-        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
-            try {
-                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
-                var firstSheetName = workbook.SheetNames[0];
-                var worksheet = workbook.Sheets[firstSheetName];
-
-                // Convert sheet to JSON to filter blank rows
-                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
-                // Filter out blank rows (rows where all cells are empty, null, or undefined)
-                var filteredData = jsonData.filter(row => row.some(filledCell));
-
-                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
-                var headerRowIndex = filteredData.findIndex((row, index) =>
-                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
-                );
-                // Fallback
-                if (headerRowIndex === -1 || headerRowIndex > 25) {
-                  headerRowIndex = 0;
-                }
-
-                // Convert filtered JSON back to CSV
-                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
-                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
-                return csv;
-            } catch (e) {
-                console.error(e);
-                return "";
-            }
-        }
-        return gk_fileData[filename] || "";
-        }
-        </script><!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com https://cdn.jsdelivr.net https://rpc.walletconnect.com; style-src 'self' https://cdn.tailwindcss.com; connect-src 'self' https://data-seed-prebsc-1-s1.binance.org:8545 https://rpc.walletconnect.com wss://relay.walletconnect.com;">
     <title>Atheist World AWT</title>
-    <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.2/dist/ethers.min.js"></script>
+    <script src="https://unpkg.com/ethers@6.13.2/dist/ethers.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@walletconnect/web3-provider@1.8.0/dist/umd/index.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
@@ -873,7 +835,7 @@
                     signer = await provider.getSigner();
                     contract = new ethers.Contract(contractAddress, contractABI, signer);
                 } else {
-                    const walletConnectProvider = new WalletConnectProvider({
+                    const walletConnectProvider = new window.WalletConnectProvider({
                         rpc: { 97: "https://data-seed-prebsc-1-s1.binance.org:8545/" },
                     });
                     await walletConnectProvider.enable();
@@ -885,33 +847,41 @@
                 document.getElementById('userAddress').innerText = userAccount;
                 document.getElementById('connectWallet').classList.add('hidden');
                 document.getElementById('dashboard').classList.remove('hidden');
-                updateDashboard();
-                checkStatus();
+                await updateDashboard();
+                await checkStatus();
             } catch (error) {
                 alert('Error connecting wallet: ' + error.message);
             }
         }
 
         async function updateDashboard() {
-            const balance = await contract.balanceOf(userAccount);
-            document.getElementById('awtBalance').innerText = ethers.formatEther(balance);
-            const referralCount = await contract.referralCount(userAccount);
-            document.getElementById('referralCount').innerText = referralCount;
-            document.getElementById('referralLink').innerText = `${window.location.origin}?ref=${userAccount}`;
+            try {
+                const balance = await contract.balanceOf(userAccount);
+                document.getElementById('awtBalance').innerText = ethers.formatEther(balance);
+                const referralCount = await contract.referralCount(userAccount);
+                document.getElementById('referralCount').innerText = referralCount.toString();
+                document.getElementById('referralLink').innerText = `${window.location.origin}?ref=${userAccount}`;
+            } catch (error) {
+                console.error('Error updating dashboard:', error);
+            }
         }
 
         async function checkStatus() {
-            const isPaused = await contract.paused();
-            const referralsPaused = await contract.referralsPaused();
-            const statusDiv = document.getElementById('status');
-            if (isPaused) {
-                statusDiv.innerText = "Staking is currently paused.";
-                statusDiv.classList.remove('hidden');
-            } else if (referralsPaused) {
-                statusDiv.innerText = "Referrals are currently paused.";
-                statusDiv.classList.remove('hidden');
-            } else {
-                statusDiv.classList.add('hidden');
+            try {
+                const isPaused = await contract.paused();
+                const referralsPaused = await contract.referralsPaused();
+                const statusDiv = document.getElementById('status');
+                if (isPaused) {
+                    statusDiv.innerText = "Staking is currently paused.";
+                    statusDiv.classList.remove('hidden');
+                } else if (referralsPaused) {
+                    statusDiv.innerText = "Referrals are currently paused.";
+                    statusDiv.classList.remove('hidden');
+                } else {
+                    statusDiv.classList.add('hidden');
+                }
+            } catch (error) {
+                console.error('Error checking status:', error);
             }
         }
 
@@ -920,7 +890,7 @@
                 const tx = await contract.claimWelcomeBonus({ value: ethers.parseEther("0.0005") });
                 await tx.wait();
                 alert('Welcome Bonus claimed successfully!');
-                updateDashboard();
+                await updateDashboard();
             } catch (error) {
                 alert('Error: ' + error.message);
             }
@@ -941,8 +911,8 @@
                 );
                 await tx.wait();
                 alert('Referral successful!');
-                updateDashboard();
-                checkStatus();
+                await updateDashboard();
+                await checkStatus();
             } catch (error) {
                 alert('Error: ' + error.message);
             }
@@ -959,7 +929,7 @@
                 const tx = await contract.transfer(to, ethers.parseEther(amount));
                 await tx.wait();
                 alert('Transfer successful!');
-                updateDashboard();
+                await updateDashboard();
             } catch (error) {
                 alert('Error: ' + error.message);
             }
@@ -971,7 +941,7 @@
                 const tx = await contract.withdraw(ethers.parseEther(amount), { value: ethers.parseEther("0.0005") });
                 await tx.wait();
                 alert('Withdrawal successful!');
-                updateDashboard();
+                await updateDashboard();
             } catch (error) {
                 alert('Error: ' + error.message);
             }
