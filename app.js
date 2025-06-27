@@ -1,5 +1,128 @@
-const contractAddress = "0x44036545a95BCBe6BFC22F7E55d40c370C849e15";
+const contractAddress = "0xF83955Fe45B7db6E162FE159D6E7138FA00F82B6";
 const contractABI = [
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "spender",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "allowance",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "needed",
+                "type": "uint256"
+            }
+        ],
+        "name": "ERC20InsufficientAllowance",
+        "type": "error"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "sender",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "balance",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "needed",
+                "type": "uint256"
+            }
+        ],
+        "name": "ERC20InsufficientBalance",
+        "type": "error"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "approver",
+                "type": "address"
+            }
+        ],
+        "name": "ERC20InvalidApprover",
+        "type": "error"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "receiver",
+                "type": "address"
+            }
+        ],
+        "name": "ERC20InvalidReceiver",
+        "type": "error"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "sender",
+                "type": "address"
+            }
+        ],
+        "name": "ERC20InvalidSender",
+        "type": "error"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "spender",
+                "type": "address"
+            }
+        ],
+        "name": "ERC20InvalidSpender",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "EnforcedPause",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "ExpectedPause",
+        "type": "error"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "owner",
+                "type": "address"
+            }
+        ],
+        "name": "OwnableInvalidOwner",
+        "type": "error"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "account",
+                "type": "address"
+            }
+        ],
+        "name": "OwnableUnauthorizedAccount",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "ReentrancyGuardReentrantCall",
+        "type": "error"
+    },
     {
         "anonymous": false,
         "inputs": [
@@ -167,7 +290,7 @@ const contractABI = [
             },
             {
                 "internalType": "uint256",
-                "name": "amount",
+                "name": "value",
                 "type": "uint256"
             }
         ],
@@ -186,7 +309,7 @@ const contractABI = [
         "inputs": [
             {
                 "internalType": "uint256",
-                "name": "amount",
+                "name": "value",
                 "type": "uint256"
             }
         ],
@@ -204,7 +327,7 @@ const contractABI = [
             },
             {
                 "internalType": "uint256",
-                "name": "amount",
+                "name": "value",
                 "type": "uint256"
             }
         ],
@@ -218,54 +341,6 @@ const contractABI = [
         "name": "claimWelcomeBonus",
         "outputs": [],
         "stateMutability": "payable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "spender",
-                "type": "address"
-            },
-            {
-                "internalType": "uint256",
-                "name": "subtractedValue",
-                "type": "uint256"
-            }
-        ],
-        "name": "decreaseAllowance",
-        "outputs": [
-            {
-                "internalType": "bool",
-                "name": "",
-                "type": "bool"
-            }
-        ],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "spender",
-                "type": "address"
-            },
-            {
-                "internalType": "uint256",
-                "name": "addedValue",
-                "type": "uint256"
-            }
-        ],
-        "name": "increaseAllowance",
-        "outputs": [
-            {
-                "internalType": "bool",
-                "name": "",
-                "type": "bool"
-            }
-        ],
-        "stateMutability": "nonpayable",
         "type": "function"
     },
     {
@@ -335,17 +410,17 @@ const contractABI = [
         "inputs": [
             {
                 "internalType": "address",
-                "name": "sender",
+                "name": "from",
                 "type": "address"
             },
             {
                 "internalType": "address",
-                "name": "recipient",
+                "name": "to",
                 "type": "address"
             },
             {
                 "internalType": "uint256",
-                "name": "amount",
+                "name": "value",
                 "type": "uint256"
             }
         ],
@@ -783,8 +858,8 @@ async function connectWallet() {
     try {
         if (window.ethereum) {
             provider = new ethers.BrowserProvider(window.ethereum);
-            const accounts = await provider.send("eth_requestAccounts", []);
-            userAccount = accounts[0];
+            await provider.send("eth_requestAccounts", []);
+            userAccount = (await provider.listAccounts())[0];
             signer = await provider.getSigner();
             contract = new ethers.Contract(contractAddress, contractABI, signer);
         } else {
@@ -845,7 +920,7 @@ async function claimWelcomeBonus() {
         alert('Welcome Bonus claimed successfully!');
         await updateDashboard();
     } catch (error) {
-        alert('Error: ' + error.message);
+        alert('Error: ' + (error.reason || error.message));
     }
 }
 
@@ -867,7 +942,7 @@ async function refer() {
         await updateDashboard();
         await checkStatus();
     } catch (error) {
-        alert('Error: ' + error.message);
+        alert('Error: ' + (error.reason || error.message));
     }
 }
 
@@ -884,7 +959,7 @@ async function transfer() {
         alert('Transfer successful!');
         await updateDashboard();
     } catch (error) {
-        alert('Error: ' + error.message);
+        alert('Error: ' + (error.reason || error.message));
     }
 }
 
@@ -896,7 +971,7 @@ async function withdraw() {
         alert('Withdrawal successful!');
         await updateDashboard();
     } catch (error) {
-        alert('Error: ' + error.message);
+        alert('Error: ' + (error.reason || error.message));
     }
 }
 
