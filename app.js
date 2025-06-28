@@ -1,4 +1,4 @@
-const contractAddress = "0xF83955Fe45B7db6E162FE159D6E7138FA00F82B6";
+const contractAddress = "0xBD72E67f83B105F60cA682d9198DdbB65ae208E3";
 const contractABI = [
 	{
 		"inputs": [
@@ -87,16 +87,6 @@ const contractABI = [
 		"type": "error"
 	},
 	{
-		"inputs": [],
-		"name": "EnforcedPause",
-		"type": "error"
-	},
-	{
-		"inputs": [],
-		"name": "ExpectedPause",
-		"type": "error"
-	},
-	{
 		"inputs": [
 			{
 				"internalType": "address",
@@ -116,11 +106,6 @@ const contractABI = [
 			}
 		],
 		"name": "OwnableUnauthorizedAccount",
-		"type": "error"
-	},
-	{
-		"inputs": [],
-		"name": "ReentrancyGuardReentrantCall",
 		"type": "error"
 	},
 	{
@@ -306,37 +291,6 @@ const contractABI = [
 		"type": "function"
 	},
 	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "value",
-				"type": "uint256"
-			}
-		],
-		"name": "burn",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "account",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "value",
-				"type": "uint256"
-			}
-		],
-		"name": "burnFrom",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
 		"inputs": [],
 		"name": "claimWelcomeBonus",
 		"outputs": [],
@@ -385,8 +339,21 @@ const contractABI = [
 	{
 		"inputs": [
 			{
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "stake",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
 				"internalType": "address",
-				"name": "recipient",
+				"name": "to",
 				"type": "address"
 			},
 			{
@@ -462,6 +429,19 @@ const contractABI = [
 	{
 		"inputs": [],
 		"name": "unpauseStaking",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "unstake",
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
@@ -557,7 +537,13 @@ const contractABI = [
 		"type": "function"
 	},
 	{
-		"inputs": [],
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "user",
+				"type": "address"
+			}
+		],
 		"name": "checkRewards",
 		"outputs": [
 			{
@@ -767,19 +753,6 @@ const contractABI = [
 		"type": "function"
 	},
 	{
-		"inputs": [],
-		"name": "referralsPaused",
-		"outputs": [
-			{
-				"internalType": "bool",
-				"name": "",
-				"type": "bool"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
 		"inputs": [
 			{
 				"internalType": "address",
@@ -878,7 +851,7 @@ async function connectWallet() {
         await updateDashboard();
         await checkStatus();
     } catch (error) {
-        alert('वॉलेट कनेक्ट करने में त्रुटि: ' + error.message);
+        alert('Error connecting wallet: ' + error.message);
     }
 }
 
@@ -888,9 +861,9 @@ async function updateDashboard() {
         document.getElementById('awtBalance').innerText = ethers.formatEther(balance);
         const referralCount = await contract.referralCount(userAccount);
         document.getElementById('referralCount').innerText = referralCount.toString();
-        document.getElementById('referralLink').innerText = `${window.location.origin}?ref=${userAccount}`;
+        document.getElementById('referralLink').innerText = `${window.location.origin}/?ref=${userAccount}`;
     } catch (error) {
-        console.error('डैशबोर्ड अपडेट में त्रुटि:', error);
+        console.error('Error updating dashboard:', error);
     }
 }
 
@@ -900,27 +873,27 @@ async function checkStatus() {
         const referralsPaused = await contract.referralsPaused();
         const statusDiv = document.getElementById('status');
         if (isPaused) {
-            statusDiv.innerText = "स्टेकिंग वर्तमान में रुकी हुई है।";
+            statusDiv.innerText = "Staking is currently paused.";
             statusDiv.classList.remove('hidden');
         } else if (referralsPaused) {
-            statusDiv.innerText = "रेफरल्स वर्तमान में रुके हुए हैं।";
+            statusDiv.innerText = "Referrals are currently paused.";
             statusDiv.classList.remove('hidden');
         } else {
             statusDiv.classList.add('hidden');
         }
     } catch (error) {
-        console.error('स्थिति जांचने में त्रुटि:', error);
+        console.error('Error checking status:', error);
     }
 }
 
 async function claimWelcomeBonus() {
     try {
-        const tx = await contract.claimWelcomeBonus({ value: ethers.parseEther("0.0005") });
+        const tx = await contract.claimWelcomeBonus({ value: ethers.parseEther("0.0005"), gasLimit: 300000 });
         await tx.wait();
-        alert('वेलकम बोनस सफलतापूर्वक क्लेम किया गया!');
+        alert('Welcome bonus claimed successfully!');
         await updateDashboard();
     } catch (error) {
-        alert('त्रुटि: ' + (error.reason || error.message));
+        alert('Error: ' + (error.reason || error.message));
     }
 }
 
@@ -928,21 +901,21 @@ async function refer() {
     const referrer = document.getElementById('referrerAddress').value;
     const amount = document.getElementById('referAmount').value;
     if (referrer && !ethers.isAddress(referrer)) {
-        alert('अमान्य रेफरर पता');
+        alert('Invalid referrer address');
         return;
     }
     try {
         const tx = await contract.refer(
             referrer || "0x0000000000000000000000000000000000000000",
             ethers.parseEther(amount),
-            { value: ethers.parseEther("0.0005") }
+            { value: ethers.parseEther("0.0005"), gasLimit: 300000 }
         );
         await tx.wait();
-        alert('रेफरल सफल!');
+        alert('Referral successful!');
         await updateDashboard();
         await checkStatus();
     } catch (error) {
-        alert('त्रुटि: ' + (error.reason || error.message));
+        alert('Error: ' + (error.reason || error.message));
     }
 }
 
@@ -950,28 +923,28 @@ async function transfer() {
     const to = document.getElementById('transferTo').value;
     const amount = document.getElementById('transferAmount').value;
     if (!ethers.isAddress(to)) {
-        alert('अमान्य प्राप्तकर्ता पता');
+        alert('Invalid recipient address');
         return;
     }
     try {
-        const tx = await contract.transfer(to, ethers.parseEther(amount));
+        const tx = await contract.transfer(to, ethers.parseEther(amount), { gasLimit: 300000 });
         await tx.wait();
-        alert('ट्रांसफर सफल!');
+        alert('Transfer successful!');
         await updateDashboard();
     } catch (error) {
-        alert('त्रुटि: ' + (error.reason || error.message));
+        alert('Error: ' + (error.reason || error.message));
     }
 }
 
 async function withdraw() {
     const amount = document.getElementById('withdrawAmount').value;
     try {
-        const tx = await contract.withdraw(ethers.parseEther(amount), { value: ethers.parseEther("0.0005") });
+        const tx = await contract.withdraw(ethers.parseEther(amount), { value: ethers.parseEther("0.0005"), gasLimit: 300000 });
         await tx.wait();
-        alert('निकासी सफल!');
+        alert('Withdrawal successful!');
         await updateDashboard();
     } catch (error) {
-        alert('त्रुटि: ' + (error.reason || error.message));
+        alert('Error: ' + (error.reason || error.message));
     }
 }
 
