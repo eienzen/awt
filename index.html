@@ -3,48 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com https://cdn.jsdelivr.net; style-src 'self'; img-src 'self' data:; connect-src 'self' https://data-seed-prebsc-1-s1.binance.org:8545 wss://relay.walletconnect.com;">
-    <title>Atheist World AWT</title>
-    <link rel="stylesheet" href="output.css">
-    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com https://cdn.jsdelivr.net 'unsafe-eval'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://data-seed-prebsc-1-s1.binance.org:8545 wss://relay.walletconnect.com;">
+    <title>Atheist World Token (AWT)</title>
+    <link rel="stylesheet" href="./output.css">
+    <link rel="icon" type="image/x-icon" href="./favicon.ico">
     <script src="https://unpkg.com/ethers@6.13.2/dist/ethers.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@walletconnect/web3-provider@2.11.0/dist/umd/index.min.js"></script>
 </head>
-<body class="bg-gray-100 font-sans">
-    <div class="container mx-auto p-4">
-        <h1 class="text-3xl font-bold text-center mb-4">Atheist World AWT</h1>
-        <div id="status" class="text-center mb-4 text-red-500 hidden"></div>
-        <div id="connectWallet" class="text-center mb-4">
-            <button id="connectWalletBtn" class="bg-blue-500 text-white px-4 py-2 rounded">वॉलेट कनेक्ट करें</button>
+<body class="bg-gray-900 text-white font-sans">
+    <div class="container mx-auto p-6">
+        <h1 class="text-4xl font-bold text-center mb-6 text-red-600">Atheist World Token (AWT)</h1>
+        <div id="status" class="text-center mb-4 text-yellow-400 hidden"></div>
+        <div id="connectWallet" class="text-center mb-6">
+            <button id="connectWalletBtn" class="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg shadow-lg">Connect Wallet</button>
         </div>
-        <div id="dashboard" class="hidden bg-white p-6 rounded shadow">
-            <h2 class="text-xl font-semibold mb-2">डैशबोर्ड</h2>
-            <p>पता: <span id="userAddress"></span></p>
-            <p>AWT बैलेंस: <span id="awtBalance"></span></p>
-            <p>रेफरल्स: <span id="referralCount"></span></p>
-            <p>रेफरल लिंक: <span id="referralLink"></span></p>
+        <div id="dashboard" class="hidden bg-gray-800 p-6 rounded-lg shadow-xl">
+            <h2 class="text-2xl font-semibold mb-4 text-gray-200">Dashboard</h2>
+            <p class="mb-2">Address: <span id="userAddress" class="text-blue-400"></span></p>
+            <p class="mb-2">AWT Balance: <span id="awtBalance" class="text-green-400"></span></p>
+            <p class="mb-2">Referrals: <span id="referralCount" class="text-purple-400"></span></p>
+            <p class="mb-4">Referral Link: <span id="referralLink" class="text-blue-300"></span></p>
             <div class="mt-4">
-                <button id="claimBonusBtn" class="bg-purple-500 text-white px-4 py-2 rounded">वेलकम बोनस क्लेम करें (100 AWT)</button>
+                <button id="claimBonusBtn" class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg shadow-lg">Claim Welcome Bonus (100 AWT)</button>
             </div>
-            <div class="mt-4">
-                <h3 class="font-semibold">कोई रेफर करें</h3>
-                <input id="referrerAddress" type="text" placeholder="रेफरर पता" class="border p-2 w-full mb-2">
-                <input id="referAmount" type="number" placeholder="AWT राशि (न्यूनतम 100)" class="border p-2 w-full mb-2">
-                <button id="referBtn" class="bg-green-500 text-white px-4 py-2 rounded">रेफर करें और स्टेक करें</button>
+            <div class="mt-6">
+                <h3 class="text-xl font-semibold mb-2 text-gray-300">Refer and Stake</h3>
+                <input id="referrerAddress" type="text" placeholder="Referrer Address" class="border border-gray-600 bg-gray-700 text-white p-2 w-full mb-2 rounded">
+                <input id="referAmount" type="number" placeholder="AWT Amount (Min 100)" class="border border-gray-600 bg-gray-700 text-white p-2 w-full mb-2 rounded">
+                <button id="referBtn" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg shadow-lg">Refer and Stake</button>
             </div>
-            <div class="mt-4">
-                <h3 class="font-semibold">AWT ट्रांसफर करें</h3>
-                <input id="transferTo" type="text" placeholder="प्राप्तकर्ता पता" class="border p-2 w-full mb-2">
-                <input id="transferAmount" type="number" placeholder="AWT राशि" class="border p-2 w-full mb-2">
-                <button id="transferBtn" class="bg-blue-500 text-white px-4 py-2 rounded">ट्रांसफर करें</button>
+            <div class="mt-6">
+                <h3 class="text-xl font-semibold mb-2 text-gray-300">Transfer AWT</h3>
+                <input id="transferTo" type="text" placeholder="Recipient Address" class="border border-gray-600 bg-gray-700 text-white p-2 w-full mb-2 rounded">
+                <input id="transferAmount" type="number" placeholder="AWT Amount" class="border border-gray-600 bg-gray-700 text-white p-2 w-full mb-2 rounded">
+                <button id="transferBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg shadow-lg">Transfer</button>
             </div>
-            <div class="mt-4">
-                <h3 class="font-semibold">AWT निकालें</h3>
-                <input id="withdrawAmount" type="number" placeholder="AWT राशि" class="border p-2 w-full mb-2">
-                <button id="withdrawBtn" class="bg-red-500 text-white px-4 py-2 rounded">निकालें</button>
+            <div class="mt-6">
+                <h3 class="text-xl font-semibold mb-2 text-gray-300">Withdraw AWT</h3>
+                <input id="withdrawAmount" type="number" placeholder="AWT Amount" class="border border-gray-600 bg-gray-700 text-white p-2 w-full mb-2 rounded">
+                <button id="withdrawBtn" class="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg shadow-lg">Withdraw</button>
             </div>
         </div>
     </div>
-    <script src="app.js" defer></script>
+    <script src="./app.js" defer></script>
 </body>
 </html>
